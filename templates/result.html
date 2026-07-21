@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your AI Travel Plan – TravelGPT</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/826/826070.png">
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <i data-lucide="plane-takeoff"></i>
+      <span>TravelGPT</span>
+    </div>
+    <div class="nav-actions">
+      <a href="/" class="btn-icon" title="Return to Planner">
+        <i data-lucide="arrow-left"></i>
+      </a>
+      <button class="btn-icon" id="themeToggle" title="Toggle Theme">
+        <i data-lucide="moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- LOADING SCREEN -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-container">
+      <div class="airplane-animation">
+        <div class="airplane-circle"></div>
+        <i data-lucide="plane" class="airplane-icon"></i>
+      </div>
+      <h2 class="loading-title">Mapping Your Adventure</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Consulting AI travel guides and compiling itinerary details...</p>
+      
+      <div class="loading-progress">
+        <div class="loading-bar" id="loadingBar"></div>
+      </div>
+      
+      <p class="loading-quote" id="loadingQuote">
+        “The world is a book and those who do not travel read only one page.” — Saint Augustine
+      </p>
+    </div>
+  </div>
+
+  <!-- RESULTS DASHBOARD -->
+  <main class="container results-dashboard" id="resultsDashboard">
+    
+    <!-- TRIP HERO CARD -->
+    <div class="trip-hero">
+      <div class="trip-hero-content">
+        <div class="trip-hero-info">
+          <span class="badge" style="background-color: rgba(255, 255, 255, 0.15); color: #ffffff; border-color: rgba(255,255,255,0.2);">
+            <i data-lucide="sparkles"></i> AI Generated Itinerary
+          </span>
+          <h1 class="trip-hero-destination" id="planDestination">Destination City</h1>
+          <div class="trip-hero-details">
+            <span id="planDays"><i data-lucide="calendar"></i> 3 Days</span>
+            <span id="planStyle"><i data-lucide="compass"></i> Solo</span>
+            <span id="planBudget"><i data-lucide="dollar-sign"></i> Moderate Budget</span>
+            <span id="planTravelers"><i data-lucide="users"></i> 1 Traveler</span>
+            <span id="planStart"><i data-lucide="map-pin"></i> From Starting City</span>
+          </div>
+        </div>
+        
+        <div class="trip-hero-actions">
+          <button class="btn-secondary" id="bookmarkBtn" title="Bookmark to Favorites">
+            <i data-lucide="star"></i> Favorite
+          </button>
+          <button class="btn-secondary" id="shareBtn" title="Copy Shareable Link">
+            <i data-lucide="share-2"></i> Share
+          </button>
+          <button class="btn-secondary" id="copyBtn" title="Copy Text Itinerary">
+            <i data-lucide="copy"></i> Copy Itinerary
+          </button>
+          <button class="btn-primary" id="downloadPdfBtn" style="box-shadow: none;">
+            <i data-lucide="download"></i> Download PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD GRID -->
+    <div class="dashboard-grid">
+      
+      <!-- LEFT COLUMN: DAY BY DAY ITINERARY -->
+      <section class="itinerary-section" id="itineraryDaysContainer">
+        <!-- Injected dynamically via JS -->
+      </section>
+      
+      <!-- RIGHT COLUMN: SIDEBAR WIDGETS -->
+      <aside class="sidebar-section">
+        
+        <!-- MAP WIDGET -->
+        <div class="widget" style="padding: 1.25rem;">
+          <h3 class="widget-title"><i data-lucide="map"></i> Route Map</h3>
+          <div class="map-container" id="map">
+            <!-- Leaflet Map renders here -->
+          </div>
+        </div>
+
+        <!-- WEATHER WIDGET -->
+        <div class="widget">
+          <h3 class="widget-title"><i data-lucide="cloud-sun"></i> Weather Forecast</h3>
+          <div class="weather-widget-content">
+            <div class="weather-header-row">
+              <span class="weather-temp" id="weatherTemp">22°C / 72°F</span>
+              <i data-lucide="cloud" style="font-size: 2rem; color: var(--primary);"></i>
+            </div>
+            <div class="weather-summary-lbl" id="weatherSummary">Mild and Pleasant</div>
+            <div class="weather-clothing" id="weatherClothing">
+              <strong>Dress Advice:</strong> Pack standard comfortable layers.
+            </div>
+          </div>
+        </div>
+
+        <!-- BUDGET PLANNING WIDGET -->
+        <div class="widget">
+          <h3 class="widget-title"><i data-lucide="wallet"></i> Estimated Budget</h3>
+          <div class="budget-summary">
+            
+            <div class="budget-total-block">
+              <div class="budget-total-val" id="budgetTotalValue">$0</div>
+              <div class="budget-total-lbl">Total Estimate</div>
+            </div>
+            
+            <div class="budget-bars">
+              
+              <!-- Accommodations -->
+              <div class="budget-bar-group">
+                <div class="budget-bar-lbls">
+                  <span>Hotel/Accommodations</span>
+                  <span id="budget-val-hotel">$0</span>
+                </div>
+                <div class="budget-bar-track">
+                  <div class="budget-bar-fill hotel" id="budget-bar-hotel"></div>
+                </div>
+              </div>
+
+              <!-- Food -->
+              <div class="budget-bar-group">
+                <div class="budget-bar-lbls">
+                  <span>Food & Dining</span>
+                  <span id="budget-val-food">$0</span>
+                </div>
+                <div class="budget-bar-track">
+                  <div class="budget-bar-fill food" id="budget-bar-food"></div>
+                </div>
+              </div>
+
+              <!-- Transport -->
+              <div class="budget-bar-group">
+                <div class="budget-bar-lbls">
+                  <span>Local Transit</span>
+                  <span id="budget-val-transport">$0</span>
+                </div>
+                <div class="budget-bar-track">
+                  <div class="budget-bar-fill transport" id="budget-bar-transport"></div>
+                </div>
+              </div>
+
+              <!-- Attractions -->
+              <div class="budget-bar-group">
+                <div class="budget-bar-lbls">
+                  <span>Sights & Tickets</span>
+                  <span id="budget-val-attractions">$0</span>
+                </div>
+                <div class="budget-bar-track">
+                  <div class="budget-bar-fill attractions" id="budget-bar-attractions"></div>
+                </div>
+              </div>
+
+              <!-- Shopping -->
+              <div class="budget-bar-group">
+                <div class="budget-bar-lbls">
+                  <span>Shopping & Extras</span>
+                  <span id="budget-val-shopping">$0</span>
+                </div>
+                <div class="budget-bar-track">
+                  <div class="budget-bar-fill shopping" id="budget-bar-shopping"></div>
+                </div>
+              </div>
+              
+            </div>
+
+            <!-- Savings suggestions -->
+            <div class="budget-saving-tips">
+              <div class="budget-saving-tips-title">Saving Suggestions</div>
+              <ul class="budget-saving-tips-list" id="budgetSavingTipsList">
+                <!-- Injected dynamically -->
+              </ul>
+            </div>
+            
+          </div>
+        </div>
+
+        <!-- TRAVEL CHECKLIST -->
+        <div class="widget">
+          <h3 class="widget-title"><i data-lucide="check-square"></i> Pre-Trip Checklist</h3>
+          <div class="checklist-list" id="checklistContainer">
+            <!-- Checklist Tasks -->
+          </div>
+        </div>
+        
+      </aside>
+
+      <!-- DETAILS TABS SECTION (FULL WIDTH) -->
+      <section class="details-tabs-section">
+        
+        <nav class="tabs-nav">
+          <button class="tab-btn active" data-tab="packing">Packing Recommendations</button>
+          <button class="tab-btn" data-tab="tips">Essential Travel Tips</button>
+          <button class="tab-btn" data-tab="nearby">Nearby Attractions</button>
+        </nav>
+        
+        <!-- Packing Content -->
+        <div class="tab-content active" id="packingTabContent">
+          <!-- Injected dynamically -->
+        </div>
+        
+        <!-- Travel Tips Content -->
+        <div class="tab-content" id="tipsTabContent">
+          <!-- Injected dynamically -->
+        </div>
+
+        <!-- Nearby Attractions Content -->
+        <div class="tab-content" id="nearbyTabContent">
+          <!-- Injected dynamically -->
+        </div>
+        
+      </section>
+      
+    </div>
+
+    <!-- BACK ACTION -->
+    <div style="margin-top: 3rem; display: flex; justify-content: center;">
+      <a href="/" class="btn-secondary btn-outline-dark" style="padding: 0.75rem 2rem;">
+        <i data-lucide="arrow-left"></i> Create Another Travel Plan
+      </a>
+    </div>
+    
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>&copy; 2026 TravelGPT AI Planner. Designed with Passion & Premium Aesthetics.</p>
+  </footer>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Core Script -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
